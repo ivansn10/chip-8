@@ -32,7 +32,7 @@ void run_emulator(ROM *rom)
                 quit = 1;
             }
         }
-        //process(&system, rom);
+        process(&system, rom);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
         draw_screen(&system, renderer);

@@ -1,2 +1,2 @@
-gcc src/main.c -o bin/emulator -lSDL2 -lGL -lm -lpthread -ldl -lrt -lX11
+gcc src/*.c -o bin/emulator -lSDL2
 ./bin/emulator rom.rom
