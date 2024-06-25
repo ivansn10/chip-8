@@ -2,13 +2,19 @@
 #include <SDL2/SDL.h>
 #include "cpu.h"
 
-void draw_screen(System *system, SDL_Renderer *renderer) {
-    for(int x = 0; x < DISPLAY_X; x++) {
-        for(int y = 0; y < DISPLAY_Y; y++) {
-            if (system->display[x][y] == 1) {
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Black for '1'
-            } else {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White for '0' or any other value
+void draw_screen(System *system, SDL_Renderer *renderer)
+{
+    for (int x = 0; x < DISPLAY_X; x++)
+    {
+        for (int y = 0; y < DISPLAY_Y; y++)
+        {
+            if (system->display[x][y] == 1)
+            {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+            }
+            else
+            {
+                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             }
             SDL_RenderDrawPoint(renderer, x, y);
         }
@@ -24,13 +30,17 @@ void run_emulator(ROM *rom)
     int quit = 0;
 
     System system = {0};
+    initialize(rom, &system);
 
     while (!quit)
     {
-        while(SDL_PollEvent(&event) != 0) {
-            if(event.type == SDL_QUIT) {
+        while (SDL_PollEvent(&event) != 0)
+        {
+            if (event.type == SDL_QUIT)
+            {
                 quit = 1;
             }
+            // handle_input(&event);
         }
         process(&system, rom);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -47,6 +57,33 @@ void run_emulator(ROM *rom)
     SDL_Quit();
 }
 
+void load_rom(ROM *rom)
+{
+    if (!rom || !rom->path)
+    {
+        fprintf(stderr, "Cannot read ROM.\n");
+        return;
+    }
+
+    FILE *file = fopen(rom->path, "r");
+    if (!file)
+    {
+        perror("Failed to open file\n");
+        return;
+    }
+
+    size_t bytesRead = fread(rom->data, sizeof(unsigned char), sizeof(rom->data), file);
+    if (bytesRead < sizeof(rom->data))
+    {
+        if (ferror(file))
+        {
+            perror("Error reading file\n");
+        }
+    }
+
+    fclose(file);
+}
+
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -55,7 +92,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ROM rom = {argv[1]};
+    ROM rom = {0};
+    rom.path = argv[1];
+    load_rom(&rom);
     run_emulator(&rom);
     return 0;
 }
