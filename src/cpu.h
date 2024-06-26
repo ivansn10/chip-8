@@ -11,7 +11,7 @@
 typedef struct System {
     //CPU
     unsigned short programCounter;
-    unsigned char stack[16];
+    unsigned short stack[16];
     unsigned short stackPointer;
     unsigned char dataRegisters[16]; //V0-VF
     unsigned short addressRegister; //I
@@ -25,10 +25,12 @@ typedef struct System {
     unsigned char fontset[80];
 
     //Display
-    unsigned char display[64][32];
+    unsigned int windowX;
+    unsigned int windowY;
+    unsigned char display[DISPLAY_X][DISPLAY_Y];
 
     //Input
-    unsigned short keys; //0-F keys
+    unsigned char keys[16]; //0-F keys
 } System;
 
 typedef struct ROM

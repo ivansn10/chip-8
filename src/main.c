@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 #include "cpu.h"
+#include "input.h"
 
 void draw_screen(System *system, SDL_Renderer *renderer)
 {
+    //Calculate the scale factor
+    float scaleX = (float)system->windowX / DISPLAY_X;
+    float scaleY = (float)system->windowY / DISPLAY_Y;
     for (int x = 0; x < DISPLAY_X; x++)
     {
         for (int y = 0; y < DISPLAY_Y; y++)
@@ -16,21 +20,47 @@ void draw_screen(System *system, SDL_Renderer *renderer)
             {
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             }
-            SDL_RenderDrawPoint(renderer, x, y);
+            //Draw a rectangle with scaling for this point
+            SDL_Rect rect;
+            rect.x = x * scaleX;
+            rect.y = y * scaleY;
+            rect.w = scaleX;
+            rect.h = scaleY;
+
+            SDL_RenderFillRect(renderer, &rect);
         }
     }
 }
 
 void run_emulator(ROM *rom)
 {
+    System system = {0};
+    initialize(rom, &system);
+    struct KeypadPair keyTable[16] = {
+        {SDL_SCANCODE_0, 0x0,},
+        {SDL_SCANCODE_1, 0x1,},
+        {SDL_SCANCODE_2, 0x2,},
+        {SDL_SCANCODE_3, 0x3,},
+        {SDL_SCANCODE_4, 0x4,},
+        {SDL_SCANCODE_5, 0x5,},
+        {SDL_SCANCODE_6, 0x6,},
+        {SDL_SCANCODE_7, 0x7,},
+        {SDL_SCANCODE_8, 0x8,},
+        {SDL_SCANCODE_9, 0x9,},
+        {SDL_SCANCODE_A, 0xA,},
+        {SDL_SCANCODE_B, 0xB,},
+        {SDL_SCANCODE_C, 0xC,},
+        {SDL_SCANCODE_D, 0xD,},
+        {SDL_SCANCODE_E, 0xE,},
+        {SDL_SCANCODE_F, 0xF,}
+    };
+    
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window *window = SDL_CreateWindow(rom->path, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DISPLAY_X, DISPLAY_Y, SDL_WINDOW_OPENGL);
+    SDL_Window *window = SDL_CreateWindow("CHIP-8", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, system.windowX, system.windowY, SDL_WINDOW_OPENGL);
+    SDL_SetWindowMaximumSize(window, system.windowX, system.windowY);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_Event event;
     int quit = 0;
-
-    System system = {0};
-    initialize(rom, &system);
 
     while (!quit)
     {
@@ -40,7 +70,7 @@ void run_emulator(ROM *rom)
             {
                 quit = 1;
             }
-            // handle_input(&event);
+            handle_input(&event, &system, keyTable);
         }
         process(&system, rom);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);

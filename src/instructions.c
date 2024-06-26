@@ -5,35 +5,32 @@
 
 void execute0NNN(unsigned short opcode, System *system) {
     //SYS addr, ignored
-    printf("You are executing 0NNN\n");
+    system->programCounter += 2;
 }
 
 void execute00E0(unsigned short opcode, System *system) {
     //CLS - clear screen
-    printf("You are executing 00E0\n");
     for(int x = 0; x < 64; x++) {
         for(int y = 0; y < 32; y++) {
             system->display[x][y] = 0;
         }
     }
+    system->programCounter += 2;
 }
 void execute00EE(unsigned short opcode, System *system) {
     //RET - Return from a subroutine
-    printf("You are executing 00EE\n");
     system->stackPointer--;
-    system->programCounter = system->stack[system->stackPointer];
+    system->programCounter = system->stack[system->stackPointer] + 2; 
 }
 void execute1NNN(unsigned short opcode, System *system) {
     //JP addr
-    printf("You are executing 1NNN\n");
     unsigned short addr = opcode & 0x0FFF;
     system->programCounter = addr;
 }
 
 void execute2NNN(unsigned short opcode, System *system) {
     //CALL addr
-    printf("You are executing 2NNN\n");
-    if(system-> stackPointer < 8) {
+    if(system-> stackPointer < 16) {
         system->stack[system->stackPointer] = system->programCounter;
         system->stackPointer++;
         system->programCounter = opcode & 0x0FFF;
@@ -42,48 +39,48 @@ void execute2NNN(unsigned short opcode, System *system) {
 
 void execute3XKK(unsigned short opcode, System *system) {
     //SE Vx, byte 
-    printf("You are executing 3XKK\n");
-    if (system->dataRegisters[(opcode & 0x0F00) >> 8] == opcode & 0x00FF) {
+    if (system->dataRegisters[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) {
         system->programCounter+= 2;
     }
+    system->programCounter += 2;
 }
 
 void execute4XKK(unsigned short opcode, System *system) {
     //SNE Vx, byte
-    printf("You are executing 4XKK\n");
-    if (system->dataRegisters[(opcode & 0x0F00) >> 8] != opcode & 0x00FF) {
+    if (system->dataRegisters[(opcode & 0x0F00) >> 8] != (opcode & 0x00FF)) {
         system->programCounter+= 2;
     }
+    system->programCounter += 2;
 }
 
 void execute5XY0(unsigned short opcode, System *system) {
     //SE Vx, Vy
-    printf("You are executing 5XY0\n");
     if (system->dataRegisters[(opcode & 0x0F00) >> 8] == system->dataRegisters[(opcode & 0x00F0) >> 4]) {
         system->programCounter+= 2;
     }
+    system->programCounter += 2;
 }
 
 void execute6XKK(unsigned short opcode, System *system) {
     //LD Vx, byte
-    printf("You are executing 6XKK\n");
     unsigned char v = (opcode & 0x0F00) >> 8;
     unsigned char b = opcode & 0x00FF;
     system->dataRegisters[v] = b;
+    system->programCounter += 2;
 }
 
 void execute7XKK(unsigned short opcode, System *system) {
     //ADD Vx, byte
-    printf("You are executing 7XKK\n");
     unsigned char v = (opcode & 0x0F00) >> 8;
     unsigned char b = opcode & 0x00FF;
     system->dataRegisters[v] += b; 
+    system->programCounter += 2;
 }
 
 void execute8XY0(unsigned short opcode, System *system) {
     //LD Vx, Vy
-    printf("You are executing 8XY0\n");
     system->dataRegisters[(opcode & 0x0F00) >> 8] = system->dataRegisters[(opcode & 0x00F0) >> 4];
+    system->programCounter += 2;
 }
 
 void execute8XY1(unsigned short opcode, System *system) {
@@ -91,6 +88,7 @@ void execute8XY1(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
     system->dataRegisters[vx] = system->dataRegisters[vx] | system->dataRegisters[vy];
+    system->programCounter += 2;
 }
 
 void execute8XY2(unsigned short opcode, System *system) {
@@ -98,6 +96,7 @@ void execute8XY2(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
     system->dataRegisters[vx] = system->dataRegisters[vx] & system->dataRegisters[vy];
+    system->programCounter += 2;
 }
 
 void execute8XY3(unsigned short opcode, System *system) {
@@ -105,6 +104,7 @@ void execute8XY3(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
     system->dataRegisters[vx] = system->dataRegisters[vx] ^ system->dataRegisters[vy];
+    system->programCounter += 2;
 }
 
 void execute8XY4(unsigned short opcode, System *system) {
@@ -117,6 +117,7 @@ void execute8XY4(unsigned short opcode, System *system) {
     system->dataRegisters[0xF] = (result > 0xFF) ? 1 : 0;
 
     system->dataRegisters[vx] = result & 0xFF;
+    system->programCounter += 2;
 }
 
 void execute8XY5(unsigned short opcode, System *system) {
@@ -129,10 +130,19 @@ void execute8XY5(unsigned short opcode, System *system) {
     system->dataRegisters[0xF] = (system->dataRegisters[vx] > system->dataRegisters[vy]) ? 1 : 0;
 
     system->dataRegisters[vx] = result;
+    system->programCounter += 2;
 }
 
 void execute8XY6(unsigned short opcode, System *system) {
     //SHR Vx {, Vy}
+
+    unsigned short x = (opcode & 0x0F00) >> 8;
+
+    system->dataRegisters[0xF] = system->dataRegisters[x] & 0x1;
+
+    system->dataRegisters[x] >>= 1;
+    system->programCounter += 2;
+
 }
 
 void execute8XY7(unsigned short opcode, System *system) {
@@ -145,10 +155,17 @@ void execute8XY7(unsigned short opcode, System *system) {
     system->dataRegisters[0xF] = (system->dataRegisters[vy] > system->dataRegisters[vx]) ? 1 : 0;
 
     system->dataRegisters[vx] = result;
+    system->programCounter += 2;
 }
 
 void execute8XYE(unsigned short opcode, System *system) {
     //SHL Vx {, Vy}
+    unsigned short x = (opcode & 0x0F00) >> 8;
+
+    system->dataRegisters[0xF] = (system->dataRegisters[x] & 0x80) >> 7;
+
+    system->dataRegisters[x] <<= 1;
+    system->programCounter += 2;
 }
 
 void execute9XY0(unsigned short opcode, System *system) {
@@ -156,33 +173,34 @@ void execute9XY0(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
 
-    if(system->dataRegisters[vx] != system->dataRegisters[vy]) system->programCounter += 2;
+    if(system->dataRegisters[vx] != system->dataRegisters[vy]) {
+        system->programCounter += 2;
+    }
+    system->programCounter += 2;
 }
 
 void executeANNN(unsigned short opcode, System *system) {
     //LD I, addr
-    printf("You are executing ANNN\n");
     unsigned short addr = opcode & 0x0FFF;
     system->addressRegister = addr;
+    system->programCounter += 2;
 }
 
 void executeBNNN(unsigned short opcode, System *system) {
     //JP V0, addr
-    printf("You are executing BNNN\n");
     system->programCounter = (opcode & 0x0FFF) + system->dataRegisters[0];
 }
 
 void executeCXKK(unsigned short opcode, System *system) {
     //RND Vx, byte
-    printf("You are executing CXKK\n");
     unsigned char randomByte = rand() % 256;
     unsigned char kk = opcode & 0x00FF;
     system->dataRegisters[(opcode & 0x0F00) >> 8] = randomByte & kk;
+    system->programCounter += 2;
 }
 
 void executeDXYN(unsigned short opcode, System *system) {
     //DRW Vx, Vy, nibble
-    printf("You are executing DXYN\n");
     unsigned short x = (opcode & 0x0F00) >> 8;
     unsigned short y = (opcode & 0x00F0) >> 4;
     unsigned short height = opcode & 0x000F; //rows
@@ -209,44 +227,86 @@ void executeDXYN(unsigned short opcode, System *system) {
             }
         }
     }
+    system->programCounter += 2;
 }
 
 void executeEX9E(unsigned short opcode, System *system) {
     //SKP Vx
+    if(system->keys[system->dataRegisters[(opcode & 0x0F00) >> 8]] == 0xF) {
+        system->programCounter+= 2;
+    }
+    system->programCounter += 2;
 }
 
 void executeEXA1(unsigned short opcode, System *system) {
     //SKNP Vx
+    if(system->keys[system->dataRegisters[(opcode & 0x0F00) >> 8]] == 0x0) {
+        system->programCounter+= 2;
+    }
+    system->programCounter += 2;
 }
 
 void executeFX07(unsigned short opcode, System *system) {
     //LD Vx, DT
+    system->dataRegisters[(opcode & 0x0F00) >> 8] = system->delayTimer;
+    system->programCounter += 2;
 }
 
 void executeFX0A(unsigned short opcode, System *system) {
     //LD Vx, K
-    
+
+    //if a key is pressed, key value into Vx and PC += 2
+    for(int i = 0; i < 16; i++) {
+        if(system->keys[i] == 0xF) {
+            system->dataRegisters[(opcode & 0x0F00) >> 8] = system->keys[i];
+            system->programCounter += 2;
+        }
+    }
 }
 
 void executeFX15(unsigned short opcode, System *system) {
     //LD DT, Vx
+    system->delayTimer = system->dataRegisters[(opcode & 0x0F00) >> 8];
+    system->programCounter += 2;
 }
 
 void executeFX18(unsigned short opcode, System *system) {
     //LD ST, Vx
+    system->soundTimer = system->dataRegisters[(opcode & 0x0F00) >> 8];
+    system->programCounter += 2;
 }
 
 void executeFX1E(unsigned short opcode, System *system) {
     //ADD I, Vx
     system->addressRegister = system->addressRegister + system->dataRegisters[(opcode & 0x0F00) >> 8];
+    system->programCounter += 2;
 }
 
 void executeFX29(unsigned short opcode, System *system) {
     //LD F, Vx
+    unsigned char character = system->dataRegisters[(opcode & 0x0F00) >> 8];
+
+    //Calculate the position of the character by adding 0x050 and the position of the character times the character size
+    system->addressRegister = 0x050 + (character * 5);
+
+    system->programCounter += 2;
 }
 
 void executeFX33(unsigned short opcode, System *system) {
     //LD B, Vx
+    unsigned char number = system->dataRegisters[(opcode & 0x0F00) >> 8];
+
+    //Extract the digits of the number up to the hundreds
+    unsigned char hundreds = number / 100;
+    unsigned char tens = (number / 10) % 10;
+    unsigned char ones = number % 10;
+
+    //Store each digit of the number to I + digitPosition
+    system->memory[system->addressRegister] = hundreds;
+    system->memory[system->addressRegister + 1] = tens;
+    system->memory[system->addressRegister + 2] = ones;
+
+    system->programCounter += 2;
 }
 
 void executeFX55(unsigned short opcode, System *system) {
@@ -254,6 +314,7 @@ void executeFX55(unsigned short opcode, System *system) {
     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++) {
         system->memory[system->addressRegister + i] = system->dataRegisters[i];
     }
+    system->programCounter += 2;
 }
 
 void executeFX65(unsigned short opcode, System *system) {
@@ -261,4 +322,5 @@ void executeFX65(unsigned short opcode, System *system) {
     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++) {
         system->dataRegisters[i] = system->memory[system->addressRegister + i];
     }
+    system->programCounter += 2;
 }

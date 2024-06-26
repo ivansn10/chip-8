@@ -13,6 +13,7 @@ struct InstructionDecode {
 
 void initialize(ROM *rom, System *system) {
     system->programCounter = 0x200;
+    system->stackPointer = 0;
 
     unsigned const char fontset[80] =
     { 
@@ -50,6 +51,10 @@ void initialize(ROM *rom, System *system) {
 
     //Initialize the RNG
     srand(time(NULL));
+
+    //Set the window size
+    system->windowX = 1280;
+    system->windowY = 640;
 }
 
 void execute(void (*instruction)(unsigned short, System*), unsigned short opcode, System *system) {
@@ -96,37 +101,29 @@ void decode(unsigned short opcode, System *system) {
         {0xF065, executeFX65, 0xF0FF}
     };
 
-    for(int i = 0; i < 34; i++) {
+    for(int i = 0; i < 35; i++) {
         if((opcode & instructionTable[i].mask) == instructionTable[i].opcode) {
-        printf("The opcode is %#04x and the mask is %#04x and the applied mask is %#04x\n",opcode, instructionTable[i].mask, opcode & instructionTable[i].mask);
-        execute(instructionTable[i].instruction, opcode, system);
-        return;
+            //printf("%#04x : The opcode is %#04x and the mask is %#04x and the applied mask is %#04x\n",system->programCounter, opcode, instructionTable[i].mask, opcode & instructionTable[i].mask);
+            execute(instructionTable[i].instruction, opcode, system);
+            return;
         }
     }
 }
 
 void fetch(System *system) {
     //fetch the instruction from RAM using the programCounter
-    unsigned short opcode = system->memory[system->programCounter] << 8 | system->memory[system->programCounter + 1];
-    //wrap if the programCounter has reached the limit
-    if(system->programCounter + 2 > 0xFFF) {
-        system->programCounter = 0x200;
-    }
-    else {
-        system->programCounter += 2;
-    }
+    unsigned short opcode = (system->memory[system->programCounter] << 8) | (system->memory[system->programCounter + 1]);
     decode(opcode, system);
 }
 
 void process(System *system, ROM *rom) {
-    static double lastFrameTime = 0.0;
+    static double endFrameTime = 0.0;
     static double accumulatedTime = 0.0;
-    float deltaTime = (SDL_GetTicks64() - lastFrameTime) / 1000.0f;
+    float deltaTime = (SDL_GetTicks64() - endFrameTime) / 1000.0f;
     accumulatedTime += deltaTime;
 
     const int targetIPS = 500;
     const float targetFrameRate = 60;
-    const float secondsPerFrame = 1.0 / 60;
 
     int frameInstructions = (int)(targetIPS * accumulatedTime);
 
@@ -137,7 +134,14 @@ void process(System *system, ROM *rom) {
     }
 
     accumulatedTime -= frameInstructions / (float)targetIPS;
-    double processedFrameTime = SDL_GetTicks64() - startFrameTime;
 
-    lastFrameTime = SDL_GetTicks64();
+    if(system->delayTimer > 0) {
+        //printf("delay timer is %d\n", system->delayTimer);
+        system->delayTimer -= 1;
+    }
+
+    if(system->soundTimer > 0) {
+        system->soundTimer -= 1;
+    }
+    endFrameTime = SDL_GetTicks64();
 }
