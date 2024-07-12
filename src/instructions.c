@@ -88,6 +88,7 @@ void execute8XY1(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
     system->dataRegisters[vx] = system->dataRegisters[vx] | system->dataRegisters[vy];
+    system->dataRegisters[0xF] = 0;
     system->programCounter += 2;
 }
 
@@ -96,6 +97,7 @@ void execute8XY2(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
     system->dataRegisters[vx] = system->dataRegisters[vx] & system->dataRegisters[vy];
+    system->dataRegisters[0xF] = 0;
     system->programCounter += 2;
 }
 
@@ -104,6 +106,7 @@ void execute8XY3(unsigned short opcode, System *system) {
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
     system->dataRegisters[vx] = system->dataRegisters[vx] ^ system->dataRegisters[vy];
+    system->dataRegisters[0xF] = 0;
     system->programCounter += 2;
 }
 
@@ -114,9 +117,8 @@ void execute8XY4(unsigned short opcode, System *system) {
 
     unsigned short result = system->dataRegisters[vx] + system->dataRegisters[vy];
 
-    system->dataRegisters[0xF] = (result > 0xFF) ? 1 : 0;
-
-    system->dataRegisters[vx] = result & 0xFF;
+    system->dataRegisters[vx] = result;
+    system->dataRegisters[0xF] = (result > 0xFF);
     system->programCounter += 2;
 }
 
@@ -124,47 +126,48 @@ void execute8XY5(unsigned short opcode, System *system) {
     //SUB Vx, Vy
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
-
+    unsigned char originalX = system->dataRegisters[vx];
     unsigned char result = system->dataRegisters[vx] - system->dataRegisters[vy];
-
-    system->dataRegisters[0xF] = (system->dataRegisters[vx] > system->dataRegisters[vy]) ? 1 : 0;
-
+    
     system->dataRegisters[vx] = result;
+    system->dataRegisters[0xF] = (originalX > system->dataRegisters[vy]);
     system->programCounter += 2;
 }
 
 void execute8XY6(unsigned short opcode, System *system) {
     //SHR Vx {, Vy}
-
     unsigned short x = (opcode & 0x0F00) >> 8;
+    unsigned short y = (opcode & 0x00F0) >> 4;
+    unsigned char originalVx = system->dataRegisters[x];
 
-    system->dataRegisters[0xF] = system->dataRegisters[x] & 0x1;
-
+    system->dataRegisters[x] = system->dataRegisters[y];
     system->dataRegisters[x] >>= 1;
+    system->dataRegisters[0xF] = (originalVx & 0x1);
     system->programCounter += 2;
-
 }
 
 void execute8XY7(unsigned short opcode, System *system) {
     //SUBN Vx, Vy
     unsigned char vx = (opcode & 0x0F00) >> 8;
     unsigned char vy = (opcode & 0x00F0) >> 4;
-
+    unsigned char originalX = system->dataRegisters[vx];
     unsigned char result = system->dataRegisters[vy] - system->dataRegisters[vx];
 
-    system->dataRegisters[0xF] = (system->dataRegisters[vy] > system->dataRegisters[vx]) ? 1 : 0;
-
     system->dataRegisters[vx] = result;
+    system->dataRegisters[0xF] = (system->dataRegisters[vy] > originalX);
     system->programCounter += 2;
 }
 
 void execute8XYE(unsigned short opcode, System *system) {
     //SHL Vx {, Vy}
     unsigned short x = (opcode & 0x0F00) >> 8;
+    unsigned short y = (opcode & 0x00F0) >> 4;
+    unsigned char originalVx = system->dataRegisters[x];
 
-    system->dataRegisters[0xF] = (system->dataRegisters[x] & 0x80) >> 7;
-
+    system->dataRegisters[x] = system->dataRegisters[y];
     system->dataRegisters[x] <<= 1;
+    //we apply the mask 10000000 and right shift it to 00000001 and check the value
+    system->dataRegisters[0xF] = (originalVx & 0x80) >> 7;
     system->programCounter += 2;
 }
 
@@ -314,6 +317,7 @@ void executeFX55(unsigned short opcode, System *system) {
     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++) {
         system->memory[system->addressRegister + i] = system->dataRegisters[i];
     }
+
     system->programCounter += 2;
 }
 
