@@ -123,7 +123,7 @@ void process(System *system, ROM *rom) {
     accumulatedTime += deltaTime;
 
     const int targetIPS = 500;
-    const float targetFrameRate = 60;
+    //const float targetFrameRate = 60;
 
     int frameInstructions = (int)(targetIPS * accumulatedTime);
 

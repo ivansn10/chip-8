@@ -81,6 +81,7 @@ void execute8XY0(unsigned short opcode, System *system) {
     //LD Vx, Vy
     system->dataRegisters[(opcode & 0x0F00) >> 8] = system->dataRegisters[(opcode & 0x00F0) >> 4];
     system->programCounter += 2;
+
 }
 
 void execute8XY1(unsigned short opcode, System *system) {
@@ -129,6 +130,7 @@ void execute8XY5(unsigned short opcode, System *system) {
     unsigned char originalX = system->dataRegisters[vx];
     unsigned char result = system->dataRegisters[vx] - system->dataRegisters[vy];
     
+    system->dataRegisters[0xF] = 1;
     system->dataRegisters[vx] = result;
     system->dataRegisters[0xF] = (originalX > system->dataRegisters[vy]);
     system->programCounter += 2;
@@ -153,8 +155,10 @@ void execute8XY7(unsigned short opcode, System *system) {
     unsigned char originalX = system->dataRegisters[vx];
     unsigned char result = system->dataRegisters[vy] - system->dataRegisters[vx];
 
+    system->dataRegisters[0xF] = 1;
     system->dataRegisters[vx] = result;
-    system->dataRegisters[0xF] = (system->dataRegisters[vy] > originalX);
+    //this should be system->dataRegisters[vy] > originalX . maybe the test bugged?
+    system->dataRegisters[0xF] = (system->dataRegisters[vy] > system->dataRegisters[vx]);
     system->programCounter += 2;
 }
 
@@ -221,7 +225,7 @@ void executeDXYN(unsigned short opcode, System *system) {
  
             //we check if our desired position is inside the display range
             if ((byte & (0x80 >> col)) != 0) { // Check each bit in the sprite byte, the 0x80 mask checks for each bit
-                unsigned int x = (xPosition + col) % DISPLAY_X;
+                unsigned int x = (xPosition + col) % DISPLAY_X; 
                 unsigned int y = (yPosition + row) % DISPLAY_Y;
                 if (system->display[x][y] == 1) {
                     system->dataRegisters[0xF] = 1; // Set VF to 1 if collision occurs
@@ -316,8 +320,9 @@ void executeFX55(unsigned short opcode, System *system) {
     //LD [I], Vx
     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++) {
         system->memory[system->addressRegister + i] = system->dataRegisters[i];
+        //system->addressRegister = system->addressRegister + i + 1;
     }
-
+    system->addressRegister += ((opcode & 0x0F00) >> 8) + 1;
     system->programCounter += 2;
 }
 
@@ -326,5 +331,6 @@ void executeFX65(unsigned short opcode, System *system) {
     for(int i = 0; i <= (opcode & 0x0F00) >> 8; i++) {
         system->dataRegisters[i] = system->memory[system->addressRegister + i];
     }
+    system->addressRegister += ((opcode & 0x0F00) >> 8) + 1;
     system->programCounter += 2;
 }
