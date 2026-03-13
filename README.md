@@ -1,6 +1,6 @@
 # CHIP-8 Virtual Machine & Interpreter 👾
 
-A high-fidelity emulation of the CHIP-8 interpreted programming language. This project explores low-level system architecture, memory management, and opcode interpretation using **C# / .NET**.
+A high-fidelity emulation of the CHIP-8 interpreted programming language. This project explores low-level system architecture, memory management, and opcode interpretation using **C**.
 
 ---
 
